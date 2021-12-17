@@ -3,7 +3,7 @@ const convertHoursToBdd = require("./convertHoursToBdd");
 const urlsToScrap = convertUrlsToArrays("url.txt");
 
 const scraperObject = {
-  url: "https://howlongtobeat.com/#search",
+  url: urlsToScrap[0],
   async scraper(browser) {
     let pagePromise = (link) =>
       new Promise(async (resolve, reject) => {
@@ -11,40 +11,55 @@ const scraperObject = {
         console.log(`Navigating to ${link}...`);
         await newPage.goto(link);
         await newPage.waitForSelector(".game_times");
-
-        // Get the link to all the required books
-        let times = await newPage.$$eval(
+        await newPage.waitForSelector(".profile_header_game .profile_header");
+        let dataObj = {};
+        // Obtenir le titre
+        dataObj["title"] = await newPage.$eval(
+          ".profile_header_game .profile_header",
+          (text) => text.innerText
+        );
+        // Obtenir la description
+        dataObj["description"] = await newPage.$$eval(
+          ".in.back_primary.shadow_box .profile_info.large",
+          (descriptions) => {
+            const fullDescription = descriptions.map((description, index) => {
+              if (index < 2) {
+                return description.innerText.replace("...Read More", "");
+              }
+              return "";
+            });
+            return fullDescription;
+          }
+        );
+        // Obtenir le temps
+        dataObj["timeCat"] = await newPage.$$eval(
           ".game_times .time_100",
-          (timesCol) => {
-            timesCol.map((timeCol) => {
-              let category = timeCol.querySelector("h5");
-              let time = timeCol.querySelector("div");
+          (timesCatHtml) => {
+            const categorysTimes = timesCatHtml.map((timeCatHtml) => {
+              let category = timeCatHtml.querySelector("h5");
+              let time = timeCatHtml.querySelector("div");
               if (category) {
                 category = category.innerText;
               }
               if (time) {
                 time = time.innerText;
               }
-              console.log(category, time);
+
+              return {
+                category: category || null,
+                time: time || null,
+              };
             });
-            return timesCol;
-            // return timeCol.map((time) => {
-            //   console.log(
-            //     "time -->",
-            //     time.innerText.replace("Hours", "").replace("½", "")
-            //   );
-            //   return time;
-            // });
+            return categorysTimes;
           }
         );
-        await newPage.waitForTimeout(5000);
-        console.log(times);
-        resolve(times);
+        await newPage.waitForTimeout(4000);
         await newPage.close();
+        resolve(dataObj);
       });
     for (link in urlsToScrap) {
       let currentPageData = await pagePromise(urlsToScrap[link]);
-      console.log(currentPageData);
+      console.log("CURRENT PAGE DATA -->", currentPageData);
     }
   },
 };
