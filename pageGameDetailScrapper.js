@@ -1,6 +1,13 @@
 const convertUrlsToArrays = require("./convertUrlsToArrays");
-const convertHoursToBdd = require("./convertHoursToBdd");
+const { PrismaClient } = require("@prisma/client");
+
+const prisma = new PrismaClient();
+
 const urlsToScrap = convertUrlsToArrays("url.txt");
+
+const convertHoursToBdd = (hour) => {
+  return hour.replace("Hours", "");
+};
 
 const scraperObject = {
   url: urlsToScrap[0],
@@ -16,14 +23,23 @@ const scraperObject = {
         // Obtenir le titre
         dataObj["title"] = await newPage.$eval(
           ".profile_header_game .profile_header",
-          (text) => text.innerText
+          (text) => {
+            return text.innerText;
+          }
+        );
+        // Obtenir le nombre de réussite
+        dataObj["totalPoll"] = await newPage.$eval(
+          ".profile_details ul li:last-child",
+          (text) => {
+            return text.innerText.replace("Beat", "").trim();
+          }
         );
         // Obtenir la description
         dataObj["description"] = await newPage.$$eval(
           ".in.back_primary.shadow_box .profile_info.large",
           (descriptions) => {
             const fullDescription = descriptions.map((description, index) => {
-              if (index < 2) {
+              if (index < 1) {
                 return description.innerText.replace("...Read More", "");
               }
               return "";
@@ -42,7 +58,10 @@ const scraperObject = {
                 category = category.innerText;
               }
               if (time) {
-                time = time.innerText;
+                time = time.innerText
+                  .replace("Hours", "")
+                  .replace("½", "")
+                  .trim();
               }
 
               return {
@@ -53,13 +72,14 @@ const scraperObject = {
             return categorysTimes;
           }
         );
-        await newPage.waitForTimeout(4000);
+        await newPage.waitForTimeout(0);
         await newPage.close();
         resolve(dataObj);
       });
     for (link in urlsToScrap) {
       let currentPageData = await pagePromise(urlsToScrap[link]);
-      console.log("CURRENT PAGE DATA -->", currentPageData);
+      const allUsers = await prisma.user.findMany();
+      console.log("CURRENT PAGE DATA -->", allUsers);
     }
   },
 };
