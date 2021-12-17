@@ -1,5 +1,5 @@
 const convertUrlsToArrays = require("./convertUrlsToArrays");
-
+const convertHoursToBdd = require("./convertHoursToBdd");
 const urlsToScrap = convertUrlsToArrays("url.txt");
 
 const scraperObject = {
@@ -14,13 +14,27 @@ const scraperObject = {
 
         // Get the link to all the required books
         let times = await newPage.$$eval(
-          ".game_times .time_100 div",
-          (times) => {
-            console.log("links", times);
-            return times.map((time) => {
-              console.log("time -->", time.innerText);
-              return time;
+          ".game_times .time_100",
+          (timesCol) => {
+            timesCol.map((timeCol) => {
+              let category = timeCol.querySelector("h5");
+              let time = timeCol.querySelector("div");
+              if (category) {
+                category = category.innerText;
+              }
+              if (time) {
+                time = time.innerText;
+              }
+              console.log(category, time);
             });
+            return timesCol;
+            // return timeCol.map((time) => {
+            //   console.log(
+            //     "time -->",
+            //     time.innerText.replace("Hours", "").replace("½", "")
+            //   );
+            //   return time;
+            // });
           }
         );
         await newPage.waitForTimeout(5000);

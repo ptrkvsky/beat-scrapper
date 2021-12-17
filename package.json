@@ -14,5 +14,8 @@
     "csv-parser": "^3.0.0",
     "puppeteer": "^13.0.0",
     "request": "^2.88.2"
+  },
+  "devDependencies": {
+    "prisma": "^3.6.0"
   }
 }
