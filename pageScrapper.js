@@ -34,7 +34,6 @@ const scraperObject = {
       });
     for (link in urlsToScrap) {
       let currentPageData = await pagePromise(urlsToScrap[link]);
-      console.log(currentPageData);
     }
   },
 };
